@@ -1,6 +1,5 @@
 #include <iostream>
 #include <iomanip>
-
 #include "roots.hpp"
 
 double poly1(double x)

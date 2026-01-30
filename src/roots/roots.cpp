@@ -47,45 +47,47 @@ bool bisection(std::function<double(double)> f,
 bool regula_falsi(std::function<double(double)> f,
                   double a, double b,
                   double *root) {
-    const double tol = 1e-6; // accounting for how close to zero root needs to be
-    const long long max_iter = 1000000;
-
-    double fa = f(a); // f at left end
-    double fb = f(b); // at right end
-    
-    // if loop for if there's no root checks for no sign change 
-    if (fa * fb > 0.0) {
+    double fa = f(a);  // f at a
+    double fb = f(b);  // f at b
+    if (fa * fb > 0.0) {  
         return false;
     }
-    //computing false position point
-    double c = (a * fb - b * fa) / (fb - fa);
-    double fc = f(c);
-
+    
+    const double tol = 1e-6;           // Tolerance 
+    const long long max_iter = 1000000; 
+    
     long long iter_count = 0;
     
     while (iter_count < max_iter) {
-        //formula
-        double c = (a * fb - b * fa) /(fb-fa);
-        // Convergence tests 
-        if (std::fabs(fc) < tol) {
-             *root = c;
-              return true;
-
-         // MATH: If f(a)*f(c) < 0, root in [a,c], else root in [c,b]
-        if (fa * fc < 0.0) {
-            b = c; fb = fc;  // Shrink to [a,c]
-        } else {
-            a = c; fa = fc;  // Shrink to [c,b]
+        
+        //  c = [a*f(b) - b*f(a)] / [f(b) - f(a)] 
+        //if (std::abs(fb - fa) < 1e-12) { break; }  // Avoid divide-by-zero
+        double c = (a * fb - b * fa) / (fb - fa);   
+        
+        //  Evaluate f(c), check tolerance
+        double fc = f(c);
+        if (std::abs(fc) <= tol) {     // |f(c)| ≤ tolerance?
+            *root = c;                 // c is root!
+            return true;               // SUCCESS yay!
         }
         
-        ++iter_count;
+        // STEP 4: f(a), f(c) opposite? 
+        if (fa * fc < 0.0) {           // f(a), f(c) opposite signs
+            b = c;                     // Setting b = c 
+            fb = fc;
+        } else {                       // f(c), f(b) opposite signs  
+            a = c;                     // Setting a = c 
+            fa = fc;
+        }
+        
+        ++iter_count;  //  Repeat
     }
     
     *root = 0.5 * (a + b);
     return false;
-        }
-    
 }
+    
+
 
 bool newton_raphson(std::function<double(double)> f,
                     std::function<double(double)> g,
@@ -94,20 +96,18 @@ bool newton_raphson(std::function<double(double)> f,
     const double tol = 1e-6;
     const long long max_iter = 1000000;
     
-    // No bracketing check (Newton doesn't guarantee bracket)
     
     long long iter_count = 0;
     
     while (iter_count < max_iter) {
-        // ========== MATH → CODE TRANSLATION ==========
         // MATH: x_new = c - f(c)/f'(c)
         double fc = f(c);                          // f(c)
-        double gc = g(c);                          // f'(c) ← NEW!
+        double gc = g(c);                          // f'(c) 
         if (std::abs(gc) < 1e-12) { break; }       // Derivative too small
         
-        double c_new = c - fc / gc;                // ← EXACT Newton formula
+        double c_new = c - fc / gc;                //  Newton formula
         
-        // NEW: Stay in bounds [a,b]
+        //Stay in bounds [a,b]
         if (c_new < a || c_new > b) {
             *root = c;
             return false;  // Left interval
@@ -120,7 +120,7 @@ bool newton_raphson(std::function<double(double)> f,
             return true;
         }
         
-        c = c_new;  // Update guess (NO bracketing!)
+        c = c_new;  // Update guess
         ++iter_count;
     }
     
@@ -131,6 +131,43 @@ bool newton_raphson(std::function<double(double)> f,
 bool secant(std::function<double(double)> f,
             double a, double b, double c,
             double *root) {
+            const double tol = 1e-6;
+    const long long max_iter = 1000000;
+    
+    // Secant TWO points c and b as x0, x-1
+    double x0 = c;  // Current guess
+    double x1 = b;  // Prev guess
+
+    long long iter_count = 0;
+    
+    while (iter_count < max_iter) {
+        // MATH: x2 = x0 - f(x0) * (x0 - x1) / [f(x0) - f(x1)]
+        double f0 = f(x0);
+        double f1 = f(x1);
+        if (std::abs(f0 - f1) < 1e-12) { break; }
+        
+        double x2 = x0 - f0 * (x0 - x1) / (f0 - f1);  //secant formula
+        
+        // Stay in bounds
+        if (x2 < a || x2 > b) {
+            *root = x0;
+            return false;
+        }
+        
+        double f2 = f(x2);
+        if (std::abs(f2) <= tol) {
+            *root = x2;
+            return true;
+        }
+        
+        // Shift: x1 ← x0, x0 ← x2
+        x1 = x0;
+        x0 = x2;
+        ++iter_count;
+    }
+    
+    *root = x0;
     return false;
 }
+    
 
