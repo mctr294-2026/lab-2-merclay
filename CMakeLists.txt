@@ -12,7 +12,7 @@ add_executable(roots_demo src/roots/main.cpp)
 
 # Library providing root-finding algorithms.
 add_library(roots src/roots/roots.cpp)
-target_include_directories(roots PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/roots)
+target_include_directories(roots PUBLIC /home/rowan/Repos/School/mctr294/lab-2-merclay/src/roots)
 target_compile_features(roots PUBLIC cxx_std_17)
 
 # Link roots_demo executable to roots library
